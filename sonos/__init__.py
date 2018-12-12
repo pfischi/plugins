@@ -162,7 +162,7 @@ class SimpleHttpServer:
 
 
 class SubscriptionHandler(object):
-    def __init__(self, endpoint, service, logger):
+    def __init__(self, endpoint, service, logger, threadName):
         self._lock = threading.Lock()
         self._thread = None
         self._service = service
@@ -170,6 +170,7 @@ class SubscriptionHandler(object):
         self._event = None
         self._signal = None
         self._logger = logger
+        self._threadName = threadName
 
     def subscribe(self):
         with self._lock:
@@ -179,7 +180,7 @@ class SubscriptionHandler(object):
             except Exception as err:
                 self._logger.warning("Sonos: {err}".format(err=err))
             if self._event:
-                self._thread = threading.Thread(target=self._endpoint, args=(self,))
+                self._thread = threading.Thread(target=self._endpoint, name=self._threadName, args=(self,))
                 self._thread.setDaemon(True)
                 self._thread.start()
 
@@ -323,22 +324,22 @@ class Speaker(object):
             if self._soco:
                 self.render_subscription = \
                     SubscriptionHandler(endpoint=self._rendering_control_event, service=self._soco.renderingControl,
-                                        logger=self._logger)
+                                        logger=self._logger, threadName="sonos_{uid}_eventRenderingControl".format(uid=self.uid))
                 self.av_subscription = \
                     SubscriptionHandler(endpoint=self._av_transport_event, service=self._soco.avTransport,
-                                        logger=self._logger)
+                                        logger=self._logger, threadName="sonos_{uid}_eventAvTransport".format(uid=self.uid))
                 self.system_subscription = \
                     SubscriptionHandler(endpoint=self._system_properties_event, service=self._soco.systemProperties,
-                                        logger=self._logger)
+                                        logger=self._logger, threadName="sonos_{uid}_eventSystemProperties".format(uid=self.uid))
                 self.zone_subscription = \
                     SubscriptionHandler(endpoint=self._zone_topology_event, service=self._soco.zoneGroupTopology,
-                                        logger=self._logger)
+                                        logger=self._logger, threadName="sonos_{uid}_eventZoneTopology".format(uid=self.uid))
                 self.alarm_subscription = \
                     SubscriptionHandler(endpoint=self._alarm_event, service=self._soco.alarmClock,
-                                        logger=self._logger)
+                                        logger=self._logger, threadName="sonos_{uid}_eventAlarmEvent".format(uid=self.uid))
                 self.device_subscription = \
                     SubscriptionHandler(endpoint=self._device_properties_event, service=self._soco.deviceProperties,
-                                        logger=self._logger)
+                                        logger=self._logger, threadName="sonos_{uid}_eventDeviceProperties".format(uid=self.uid))
 
                 # just to have a list for disposing all events
                 self._events = [
