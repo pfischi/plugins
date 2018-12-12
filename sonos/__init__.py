@@ -193,7 +193,7 @@ class SubscriptionHandler(object):
                     self._logger.warning("Sonos: {err}".format(err=err))
                 self._signal.set()
                 if self._thread:
-                    self._thread.join()
+                    self._thread.join(2)
                 self._logger.debug("Sonos: event {event} unsubscribed and thread terminated".format(
                     event=self._endpoint))
 
@@ -454,6 +454,7 @@ class Speaker(object):
                     if 'dialog_mode' in event.variables:
                         self.dialog_mode = event.variables['dialog_mode']
                     sub_handler.event.events.task_done()
+                    del event
                 except Empty:
                     pass
         except Exception as ex:
@@ -470,6 +471,7 @@ class Speaker(object):
                 try:
                     event = sub_handler.event.events.get(timeout=0.5)
                     sub_handler.event.events.task_done()
+                    del event
                 except Empty:
                     pass
         except Exception as ex:
@@ -486,6 +488,7 @@ class Speaker(object):
                 try:
                     event = sub_handler.event.events.get(timeout=0.5)
                     sub_handler.event.events.task_done()
+                    del event
                 except Empty:
                     pass
         except Exception as ex:
@@ -504,6 +507,7 @@ class Speaker(object):
                     if 'zone_name' in event.variables:
                         self.player_name = event.variables['zone_name']
                     sub_handler.event.events.task_done()
+                    del event
                 except Empty:
                     pass
         except Exception as ex:
@@ -547,6 +551,7 @@ class Speaker(object):
                                 self.sonos_playlists()
 
                     sub_handler.event.events.task_done()
+                    del event
                 except Empty:
                     pass
         except Exception as ex:
@@ -687,6 +692,7 @@ class Speaker(object):
                         self.radio_station = ''
 
                     sub_handler.event.events.task_done()
+                    del event
                 except Empty:
                     pass
         except Exception as ex:
@@ -2290,7 +2296,7 @@ class Speaker(object):
 
 class Sonos(SmartPlugin):
     ALLOW_MULTIINSTANCE = False
-    PLUGIN_VERSION = "1.4.8"
+    PLUGIN_VERSION = "1.4.9"
 
     def __init__(self, sh, tts=False, local_webservice_path=None, local_webservice_path_snippet=None,
                  discover_cycle="120", webservice_ip=None, webservice_port=23500, speaker_ips=None, snippet_duration_offset=0.0, **kwargs):
