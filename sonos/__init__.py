@@ -28,7 +28,6 @@ import os
 import logging
 import re
 import socketserver
-import subprocess
 import threading
 from collections import OrderedDict
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -63,7 +62,6 @@ from plugins.sonos.utils import file_size, get_tts_local_file_path, get_free_dis
 _create_speaker_lock = threading.Lock()  # make speaker object creation thread-safe
 sonos_speaker = {}
 
-
 class WebserviceHttpHandler(BaseHTTPRequestHandler):
     webroot = None
 
@@ -83,7 +81,6 @@ class WebserviceHttpHandler(BaseHTTPRequestHandler):
 
             filename, extension = os.path.splitext(file_path)
             extension = extension.strip('.').lower()
-
             for mime_type, key in mapping.items():
                 if extension == key:
                     return mime_type
@@ -320,6 +317,8 @@ class Speaker(object):
     def soco(self, value):
         if self._soco != value:
             self._soco = value
+            
+            self.uid = self.soco.uid.lower()
             self._logger.debug("Sonos: {uid}: soco set to {value}".format(uid=self.uid, value=value))
             if self._soco:
                 self.render_subscription = \
@@ -2794,15 +2793,13 @@ class Sonos(SmartPlugin):
                 uid = zone.uid.lower()
                 # don't trust the discover function, offline speakers can be cached
                 # we try to ping the speaker
-                with open(os.devnull, 'w') as DEVNULL:
-                    try:
-                        subprocess.check_call(['ping', '-i', '0.2', '-c', '2', zone.ip_address],
-                                              stdout=DEVNULL, stderr=DEVNULL, timeout=1)
-                        is_up = True
-                    except subprocess.CalledProcessError:
-                        is_up = False
-                    except subprocess.TimeoutExpired:
-                        is_up = False
+
+                try:
+                    response = requests.get("http://{ip}:1400/status".format(ip=zone.ip_address), timeout=2)
+                    response.raise_for_status()
+                    is_up = True
+                except Exception as ex:
+                    is_up = False
 
             if is_up:
                 self._logger.debug("Sonos: Speaker found: {zone}, {uid}".format(zone=zone.ip_address, uid=uid))
